@@ -1,12 +1,10 @@
-// import moment from 'moment';
-import React, {Component} from 'react';
-import {View, Text, StyleSheet, Pressable} from 'react-native';
+import React from 'react';
+import {View, Text, StyleSheet, Pressable, Image} from 'react-native';
 import {COLORS} from '../Constant/Color';
-import {FONTS} from '../Constant/Font';
 import TimeDelivery from './TimeDelivery';
 
 const MsgComponent = props => {
-  const {sender, massage, item, sendTime} = props;
+  const {sender, item} = props;
   return (
     <Pressable style={{marginVertical: 0}}>
       <View
@@ -17,20 +15,31 @@ const MsgComponent = props => {
           styles.masBox,
           {
             alignSelf: sender ? 'flex-end' : 'flex-start',
-            // borderWidth:1,
             backgroundColor: sender ? COLORS.theme : COLORS.white,
           },
         ]}>
-        <Text
-          style={{
-            paddingLeft: 5,
-            color: sender ? COLORS.white : COLORS.black,
-            fontFamily: FONTS.Regular,
-            fontSize: 12.5,
-          }}>
-          {item.massage}
-        </Text>
-
+        {item.message.startsWith('image:') ? (
+          <Image
+            resizeMode="contain"
+            style={{
+              width: 100,
+              height: 100,
+              borderRadius: 15,
+              resizeMode: 'cover',
+            }}
+            source={{uri: item.message.replace('image:', '')}}
+          />
+        ) : (
+          <Text
+            style={{
+              textAlign: sender ? 'right' : 'left',
+              color: sender ? COLORS.white : COLORS.black,
+              fontSize: 16,
+              marginBottom: 5,
+            }}>
+            {item.message}
+          </Text>
+        )}
         <TimeDelivery sender={sender} item={item} />
       </View>
     </Pressable>
@@ -94,7 +103,6 @@ const styles = StyleSheet.create({
   right: {
     borderBottomColor: COLORS.theme,
     right: 2,
-    // top:0,
     bottom: 5,
     transform: [{rotate: '103deg'}],
   },

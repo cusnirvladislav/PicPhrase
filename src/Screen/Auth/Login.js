@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   StatusBar,
   Text,
@@ -6,24 +6,44 @@ import {
   Dimensions,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   TextInput,
-  Image,
+  Alert,
 } from 'react-native';
-import {Container, Card, CardItem, Icon} from 'native-base';
+import {Container, CardItem, Icon} from 'native-base';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {COLORS} from '../../Component/Constant/Color';
-import {FONTS} from '../../Component/Constant/Font';
 import Navigation from '../../Service/Navigation';
+import database from '@react-native-firebase/database';
+import {useDispatch} from 'react-redux';
+import {setUser} from '../../Redux/reducer/user';
+import Auth from '../../Service/Auth';
 
 const {width, height} = Dimensions.get('window');
 
 function Login() {
-  const [mobile, setmobile] = useState('');
+  const dispatch = useDispatch();
+  const [email, setemail] = useState('');
+  const [pass, setpass] = useState('');
 
-  useEffect(() => {}, []);
-
-  // return <View></View>;
+  const loginUser = async () => {
+    database()
+      .ref('users/')
+      .orderByChild('emailId')
+      .equalTo(email)
+      .once('value')
+      .then(async snapshot => {
+        if (snapshot.val() == null) {
+          return false;
+        }
+        let userData = Object.values(snapshot.val())[0];
+        if (userData?.password != pass) {
+          Alert.alert('Invalid Password!');
+          return false;
+        }
+        dispatch(setUser(userData));
+        await Auth.setAccount(userData);
+      });
+  };
 
   return (
     <Container>
@@ -32,39 +52,26 @@ function Login() {
         barStyle="light-content"
         hidden={false}
       />
-      <View style={styles.uppercard}>
-        <Image
-          style={{width: 70, height: 70, borderRadius: 35}}
-          source={{
-            uri: 'https://yt3.ggpht.com/yti/APfAmoG-m3--E1zYY977bOWG0FS_syFGSbqjyAbh6dDi=s88-c-k-c0x00ffffff-no-rj-mo',
-          }}
-        />
-        <Text
-          style={{
-            color: '#fff',
-            fontFamily: FONTS.Bold,
-            fontSize: 25,
-          }}>
-          DEVELOPERS' SIN
-        </Text>
+      <View style={styles.upperCard}>
+        <Text style={styles.upperCardTitle}>PicPhrase</Text>
       </View>
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        <Card
-          style={{
-            backgroundColor: '#fff',
-            width: '90%',
-            borderRadius: 15,
-          }}>
-          <CardItem style={styles.cardView}>
-            <View style={{flex: 1}}>
-              <Text style={styles.Login}>Login</Text>
-              <Text style={styles.smallTxt}>
-                In order to login your account please enter credentials
-              </Text>
-              <KeyboardAwareScrollView
-                showsHorizontalScrollIndicator={false}
-                showsVerticalScrollIndicator={false}>
-                <View style={[styles.inputContainer, {marginTop: 10}]}>
+      <View style={{flex: 1, justifyContent: 'flex-end', alignItems: 'center'}}>
+        <KeyboardAwareScrollView
+          style={{marginTop: 90}}
+          showsHorizontalScrollIndicator={false}
+          showsVerticalScrollIndicator={false}>
+          <View
+            style={{
+              width: width - 30,
+            }}>
+            <CardItem style={styles.cardView}>
+              <View style={{flex: 1}}>
+                <Text style={styles.Login}>Login</Text>
+                <Text style={styles.smallTxt}>
+                  In order to login your account please enter credentials
+                </Text>
+
+                <View style={[styles.inputContainer, {marginTop: 40}]}>
                   <View style={styles.inputIconView}>
                     <Icon
                       name="gmail"
@@ -78,13 +85,14 @@ function Login() {
                   </View>
                   <TextInput
                     style={styles.inputs}
+                    autoCapitalize="none"
                     placeholder="Enter Email Id"
-                    keyboardType="number-pad"
+                    keyboardType="email-address"
                     underlineColorAndroid="transparent"
                     onChangeText={value => {
-                      setmobile(value);
+                      setemail(value);
                     }}
-                    value={mobile}
+                    value={email}
                     placeholderTextColor={COLORS.liteBlack}
                   />
                 </View>
@@ -102,37 +110,32 @@ function Login() {
                     />
                   </View>
                   <TextInput
+                    secureTextEntry={true}
                     style={styles.inputs}
                     placeholder="Enter Password"
-                    keyboardType="number-pad"
                     underlineColorAndroid="transparent"
                     onChangeText={value => {
-                      setmobile(value);
+                      setpass(value);
                     }}
-                    value={mobile}
+                    value={pass}
                     placeholderTextColor={COLORS.liteBlack}
                   />
                 </View>
-              </KeyboardAwareScrollView>
-
-              <TouchableOpacity
-                style={styles.btn}
-                onPress={() => Navigation.navigate('AppStack')}>
-                <Text style={styles.btnText}>Login Now</Text>
-              </TouchableOpacity>
-
-              <View style={styles.contactView}>
-                <Text style={styles.smallTxt}>New user?</Text>
-                <TouchableOpacity
-                  style={{marginLeft: 4}}
-                  onPress={() => Navigation.navigate('Register')}>
-                  <Text style={styles.register}>Register Now</Text>
+                <TouchableOpacity style={styles.btn} onPress={loginUser}>
+                  <Text style={styles.btnText}>Login Now</Text>
                 </TouchableOpacity>
+                <View style={styles.contactView}>
+                  <Text style={styles.smallTxt}>New user?</Text>
+                  <TouchableOpacity
+                    style={{marginLeft: 4}}
+                    onPress={() => Navigation.navigate('Register')}>
+                    <Text style={styles.register}>Register Now</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              {/*<View></View>*/}
-            </View>
-          </CardItem>
-        </Card>
+            </CardItem>
+          </View>
+        </KeyboardAwareScrollView>
       </View>
     </Container>
   );
@@ -141,14 +144,23 @@ function Login() {
 export default Login;
 
 const styles = StyleSheet.create({
-  uppercard: {
+  upperCard: {
     height: height / 4,
     backgroundColor: COLORS.theme,
-    borderBottomLeftRadius: height / 8,
+    borderBottomRightRadius: height / 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
+  upperCardTitle: {
+    color: '#fff',
+    fontSize: 45,
+  },
+  logo: {
+    height: height / 2 - 50,
+    width: '95%',
+    resizeMode: 'cover',
+    borderRadius: 13,
+  },
   loginBtn: {
     height: 48,
     width: '95%',
@@ -161,24 +173,18 @@ const styles = StyleSheet.create({
   loginText: {
     color: COLORS.lightgray,
     fontSize: 18,
-    fontFamily: FONTS.Regular,
   },
   buttonSec: {marginTop: 20, justifyContent: 'center', alignItems: 'center'},
-  logo: {
-    height: height / 2 - 50,
-    width: '95%',
-    resizeMode: 'cover',
-    borderRadius: 13,
-  },
   inputs: {
     borderBottomColor: COLORS.white,
     flex: 1,
     color: COLORS.liteBlack,
     paddingLeft: 10,
-    fontFamily: FONTS.Regular,
   },
   inputContainer: {
     borderRadius: 30,
+    borderColor: COLORS.theme,
+    borderWidth: 1,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
@@ -201,14 +207,12 @@ const styles = StyleSheet.create({
   smallTxt: {
     fontSize: 13,
     color: COLORS.black,
-    fontFamily: FONTS.Regular,
     marginTop: 10,
     opacity: 0.5,
     textAlign: 'center',
   },
   register: {
     fontSize: 13,
-    fontFamily: FONTS.SemiBold,
     marginTop: 12,
     textAlign: 'center',
     color: COLORS.textInput,
@@ -222,7 +226,6 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: '#fff',
-    fontFamily: FONTS.SemiBold,
     fontSize: 14,
     marginTop: 2,
   },
@@ -237,14 +240,12 @@ const styles = StyleSheet.create({
   },
   Login: {
     alignSelf: 'center',
-    fontFamily: FONTS.Medium,
     color: COLORS.textInput,
     fontSize: 20,
     marginTop: 10,
   },
   cardView: {
     backgroundColor: '#fff',
-    borderRadius: 15,
     paddingBottom: 20,
     paddingTop: 20,
   },

@@ -10,10 +10,8 @@ export default function AuthStack() {
   return (
     <Stack.Navigator
       screenOptions={{
-        cardStyle: {backgroundColor: COLORS.button},
+        cardStyle: {backgroundColor: COLORS.theme},
         gestureEnabled: true,
-        backgroundColor: COLORS.button,
-        gestureDirection: 'horizontal',
         ...TransitionPresets.SlideFromRightIOS,
       }}
       initialRouteName="Home"

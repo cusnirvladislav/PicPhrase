@@ -10,16 +10,12 @@ export default function AuthStack() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false,
-        cardStyle: {backgroundColor: COLORS.button},
-        gestureEnabled: true,
-        backgroundColor: COLORS.button,
-        gestureDirection: 'horizontal',
         ...TransitionPresets.SlideFromRightIOS,
       }}
-      initialRouteName="Login">
+      initialRouteName="Login"
+      headerMode="none">
       <Stack.Screen name="Login" component={Login} />
-      <Stack.Screen name="Register" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
     </Stack.Navigator>
   );
 }

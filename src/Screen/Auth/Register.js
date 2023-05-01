@@ -8,20 +8,68 @@ import {
   StyleSheet,
   TextInput,
   Image,
+  Alert,
 } from 'react-native';
-import {Container, Card, CardItem, Icon} from 'native-base';
+import {Container, CardItem, Icon} from 'native-base';
 import {KeyboardAwareScrollView} from 'react-native-keyboard-aware-scroll-view';
 import {COLORS} from '../../Component/Constant/Color';
-import {FONTS} from '../../Component/Constant/Font';
 import Navigation from '../../Service/Navigation';
+import uuid from 'react-native-uuid';
+import database from '@react-native-firebase/database';
+import {useDispatch} from 'react-redux';
+import {setUser} from '../../Redux/reducer/user';
+import Auth from '../../Service/Auth';
 
 const {width, height} = Dimensions.get('window');
 
 function Register() {
+  const dispatch = useDispatch();
   const [name, setname] = useState('');
   const [email, setemail] = useState('');
   const [pass, setpass] = useState('');
-  const [about, setabout] = useState('');
+
+  const loginUser = async (email, pass) => {
+    database()
+      .ref('users/')
+      .orderByChild('emailId')
+      .equalTo(email)
+      .once('value')
+      .then(async snapshot => {
+        if (snapshot.val() == null) {
+          return false;
+        }
+        let userData = Object.values(snapshot.val())[0];
+        if (userData?.password != pass) {
+          Alert.alert('Invalid Password!');
+          return false;
+        }
+        dispatch(setUser(userData));
+        await Auth.setAccount(userData);
+      });
+  };
+  const registerUser = async () => {
+    if (name == '' || email == '' || pass == '') {
+      Alert.alert('Fill in all the fields!');
+      return false;
+    }
+    let data = {
+      id: uuid.v4(),
+      name: name,
+      emailId: email,
+      password: pass,
+      img: 'https://www.pngall.com/wp-content/uploads/5/User-Profile-PNG-High-Quality-Image.png',
+    };
+
+    database()
+      .ref('/users/' + data.id)
+      .set(data)
+      .then(() => {
+        setname('');
+        setemail('');
+        setpass('');
+        loginUser(email, pass);
+      });
+  };
 
   return (
     <Container>
@@ -30,26 +78,23 @@ function Register() {
         barStyle="light-content"
         hidden={false}
       />
-      <View style={styles.uppercard}>
-        <Image
-          style={{width: 70, height: 70, borderRadius: 35}}
-          source={{
-            uri: 'https://yt3.ggpht.com/yti/APfAmoG-m3--E1zYY977bOWG0FS_syFGSbqjyAbh6dDi=s88-c-k-c0x00ffffff-no-rj-mo',
-          }}
-        />
-        <Text style={{color: '#fff', fontFamily: FONTS.Bold, fontSize: 25}}>
-          DEVELOPERS' SIN
+      <View style={styles.upperCard}>
+        <Text
+          style={{
+            color: '#fff',
+            fontSize: 45,
+          }}>
+          PicPhrase
         </Text>
       </View>
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View
+        style={{flex: 1, justifyContent: 'flex-start', alignItems: 'center'}}>
         <KeyboardAwareScrollView
-          style={{marginTop: 20}}
+          style={{marginTop: 90}}
           showsVerticalScrollIndicator={false}>
-          <Card
+          <View
             style={{
-              backgroundColor: '#fff',
               width: width - 30,
-              borderRadius: 15,
             }}>
             <CardItem style={styles.cardView}>
               <View style={{flex: 1}}>
@@ -57,7 +102,7 @@ function Register() {
                 <Text style={styles.smallTxt}>
                   In order to Register your account please fill out all fields
                 </Text>
-                <View style={[styles.inputContainer, {marginTop: 10}]}>
+                <View style={[styles.inputContainer, {marginTop: 40}]}>
                   <View style={styles.inputIconView}>
                     <Icon
                       name="person"
@@ -93,13 +138,13 @@ function Register() {
                   <TextInput
                     style={styles.inputs}
                     placeholder="Enter Email Id"
+                    autoCapitalize="none"
                     underlineColorAndroid="transparent"
                     onChangeText={value => setemail(value)}
                     value={email}
                     placeholderTextColor={COLORS.liteBlack}
                   />
                 </View>
-
                 <View style={styles.inputContainer}>
                   <View style={styles.inputIconView}>
                     <Icon
@@ -114,6 +159,7 @@ function Register() {
                   </View>
                   <TextInput
                     style={styles.inputs}
+                    secureTextEntry={true}
                     placeholder="Enter Password"
                     underlineColorAndroid="transparent"
                     onChangeText={value => setpass(value)}
@@ -121,32 +167,7 @@ function Register() {
                     placeholderTextColor={COLORS.liteBlack}
                   />
                 </View>
-
-                <View style={styles.inputContainer}>
-                  <View style={styles.inputIconView}>
-                    <Icon
-                      name="md-information-circle"
-                      type="Ionicons"
-                      style={{
-                        color: '#fff',
-                        fontSize: 18,
-                        textAlign: 'center',
-                      }}
-                    />
-                  </View>
-                  <TextInput
-                    style={styles.inputs}
-                    placeholder="Enter About"
-                    underlineColorAndroid="transparent"
-                    onChangeText={value => setabout(value)}
-                    value={about}
-                    placeholderTextColor={COLORS.liteBlack}
-                  />
-                </View>
-
-                <TouchableOpacity
-                  style={styles.btn}
-                  onPress={() => Navigation.navigate('AppStack')}>
+                <TouchableOpacity style={styles.btn} onPress={registerUser}>
                   <Text style={styles.btnText}>Register Now</Text>
                 </TouchableOpacity>
 
@@ -161,7 +182,7 @@ function Register() {
                 <View></View>
               </View>
             </CardItem>
-          </Card>
+          </View>
         </KeyboardAwareScrollView>
       </View>
     </Container>
@@ -171,12 +192,18 @@ function Register() {
 export default Register;
 
 const styles = StyleSheet.create({
-  uppercard: {
+  upperCard: {
     height: height / 4,
     backgroundColor: COLORS.theme,
     borderBottomLeftRadius: height / 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  logo: {
+    height: height / 2 - 50,
+    width: '95%',
+    resizeMode: 'cover',
+    borderRadius: 13,
   },
   loginBtn: {
     height: 48,
@@ -190,25 +217,18 @@ const styles = StyleSheet.create({
   loginText: {
     color: COLORS.lightgray,
     fontSize: 18,
-    fontFamily: FONTS.Regular,
   },
   buttonSec: {marginTop: 20, justifyContent: 'center', alignItems: 'center'},
-  logo: {
-    height: height / 2 - 50,
-    width: '95%',
-    resizeMode: 'cover',
-    borderRadius: 13,
-  },
-
   inputs: {
     borderBottomColor: COLORS.white,
     flex: 1,
     color: COLORS.liteBlack,
     paddingLeft: 10,
-    fontFamily: FONTS.Regular,
   },
   inputContainer: {
     borderRadius: 30,
+    borderColor: COLORS.theme,
+    borderWidth: 1,
     height: 48,
     flexDirection: 'row',
     alignItems: 'center',
@@ -231,14 +251,12 @@ const styles = StyleSheet.create({
   smallTxt: {
     fontSize: 13,
     color: COLORS.black,
-    fontFamily: FONTS.Regular,
     marginTop: 10,
     opacity: 0.5,
     textAlign: 'center',
   },
   register: {
     fontSize: 13,
-    fontFamily: FONTS.SemiBold,
     marginTop: 12,
     textAlign: 'center',
     color: COLORS.textInput,
@@ -252,7 +270,6 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: '#fff',
-    fontFamily: FONTS.SemiBold,
     fontSize: 14,
     marginTop: 2,
   },
@@ -267,7 +284,6 @@ const styles = StyleSheet.create({
   },
   Login: {
     alignSelf: 'center',
-    fontFamily: FONTS.Medium,
     color: COLORS.textInput,
     fontSize: 20,
     marginTop: 10,

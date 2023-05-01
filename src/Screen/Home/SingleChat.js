@@ -1,155 +1,243 @@
 //import liraries
-import { Icon } from 'native-base';
-import React, { Component } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TextInput, SectionList, TouchableOpacity, FlatList } from 'react-native';
-// import ChatHeader from '../../Component/Header/ChatHeader';
-// import { COLORS } from '../../Component/Constant'
-// import Toast from 'react-native-simple-toast';
+import {Icon} from 'native-base';
+import React, {Component, useEffect, useRef, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  TextInput,
+  SectionList,
+  TouchableOpacity,
+  FlatList,
+  Alert,
+  SafeAreaView,
+} from 'react-native';
 import moment from 'moment';
 import MsgComponent from '../../Component/Chat/MsgComponent';
-import { COLORS } from '../../Component/Constant/Color';
+import {COLORS} from '../../Component/Constant/Color';
 import ChatHeader from '../../Component/Header/ChatHeader';
-// create a component
+import {useSelector} from 'react-redux';
+import database from '@react-native-firebase/database';
+import Dialog from 'react-native-dialog';
 
-const Data = [
-            {
-                massage: 'Yes Ofcourse..',
-                type: 'sender'
-            },
-            {
-                massage: 'How are You ?',
-                type: 'sender'
-            },
-            {
-                massage: 'How Your Opinion about the one done app ?',
-                type: 'sender'
-            },
-            {
-                massage: 'Well i am not satisfied with this design plzz make design better ',
-                type: 'receiver'
-            },
-            {
-                massage: 'could you plz change the design...',
-                type: 'receiver'
-            },
-            {
-                massage: 'How are You ?',
-                type: 'sender'
-            },
-            {
-                massage: 'How Your Opinion about the one done app ?',
-                type: 'sender'
-            },
-            {
-                massage: 'Well i am not satisfied with this design plzz make design better ',
-                type: 'receiver'
-            },
-            {
-                massage: 'could you plz change the design...',
-                type: 'receiver'
-            },
-            {
-                massage: 'How are You ?',
-                type: 'sender'
-            },
-            {
-                massage: 'How Your Opinion about the one done app ?',
-                type: 'sender'
-            }
-]
+function isImageUrl(url) {
+  // Verificați dacă este un URL valid
+  const urlRegex = /^(ftp|http|https):\/\/[^ "]+$/;
+  if (!urlRegex.test(url)) {
+    return false;
+  }
 
+  const imageRegex = /\.(gif|jpe?g|tiff?|png|webp|bmp)$/i;
+  if (!imageRegex.test(url)) {
+    return false;
+  }
 
-const SingleChat = (props) => {
+  return true;
+}
+const SingleChat = props => {
+  const {userData} = useSelector(state => state.User);
+  const textInputRef = useRef();
+  const {receiverData} = props.route.params;
 
-    const { data } = props.route.params;
+  const [msg, setMsg] = React.useState('');
+  const [disabled, setdisabled] = React.useState(false);
+  const [allChat, setallChat] = React.useState([]);
+  const [visible, setVisible] = useState(false);
+  const [imageUrl, setImageUrl] = useState();
+  useEffect(() => {
+    const onChildAdd = database()
+      .ref('/messages/' + receiverData.roomId)
+      .on('child_added', snapshot => {
+        setallChat(state => [snapshot.val(), ...state]);
+      });
+    // Stop listening for updates when no longer required
+    return () =>
+      database()
+        .ref('/messages' + receiverData.roomId)
+        .off('child_added', onChildAdd);
+  }, [receiverData.roomId]);
 
-    // console.log("token",token)
+  const msgvalid = txt => txt && txt.replace(/\s/g, '').length;
 
-    const [msg, setMsg] = React.useState('');
-    const [update, setupdate] = React.useState(false);
-    const [disabled, setdisabled] = React.useState(false);
-    const [allChat, setallChat] = React.useState([]);
+  const sendMsg = () => {
+    if (msg == '' || msgvalid(msg) == 0) {
+      Alert.alert('Enter something....');
+      return false;
+    }
+    setdisabled(true);
+    let msgData = {
+      roomId: receiverData.roomId,
+      message: msg,
+      from: userData?.id,
+      to: receiverData.id,
+      sendTime: moment().format(''),
+      msgType: 'text',
+    };
 
+    const newReference = database()
+      .ref('/messages/' + receiverData.roomId)
+      .push();
+    msgData.id = newReference.key;
+    newReference.set(msgData).then(() => {
+      let chatListupdate = {
+        lastMsg: msg,
+        sendTime: msgData.sendTime,
+      };
+      database()
+        .ref('/chatlist/' + receiverData?.id + '/' + userData?.id)
+        .update(chatListupdate)
+        .then(() => console.log('Data updated.'));
+      database()
+        .ref('/chatlist/' + userData?.id + '/' + receiverData?.id)
+        .update(chatListupdate)
+        .then(() => console.log('Data updated.'));
 
-    return (
-        <View style={styles.container}>
-            <ChatHeader data={data} />
-            <ImageBackground
-                source = {require('../../Assets/Background.jpg')}
-                style={{flex: 1}}
-            >
-                <FlatList
-                    style={{ flex: 1}}
-                    data={Data}
-                    showsVerticalScrollIndicator={false}
-                    keyExtractor={(item, index) => index}
-                    inverted
-                    renderItem={({ item }) => {
-                        return (
-                            <MsgComponent
-                                sender={item.type == "sender"}
-                                massage={item.message}
-                                item={item}
-                            />
-                        )
-                    }}
-                />
-            </ImageBackground>
+      setMsg('');
+      setdisabled(false);
+    });
+  };
 
-            <View
-                style={{
-                    backgroundColor: COLORS.theme, 
-                    elevation: 5,
-                    // height: 60,
-                    flexDirection:'row',
-                    alignItems:'center',
-                    paddingVertical:7,
-                    justifyContent:'space-evenly'
-                }}
-            >
+  const handleSend = () => {
+    if (isImageUrl(imageUrl)) {
+      setdisabled(true);
+      let msgData = {
+        roomId: receiverData.roomId,
+        message: `image:${imageUrl}`,
+        from: userData?.id,
+        to: receiverData.id,
+        sendTime: moment().format(''),
+        msgType: 'text',
+      };
 
-                <TextInput
-                    style={{
-                        backgroundColor: COLORS.white,
-                        width:'80%',
-                        borderRadius:25,
-                        borderWidth:0.5,
-                        borderColor: COLORS.white,
-                        paddingHorizontal: 15,
-                        color: COLORS.black,
-                    }}
-                    placeholder = "type a message"
-                    placeholderTextColor = {COLORS.black}
-                    multiline = {true}
-                    value={msg}
-                    onChangeText={(val)=>setMsg(val)}
-                />
+      const newReference = database()
+        .ref('/messages/' + receiverData.roomId)
+        .push();
+      msgData.id = newReference.key;
+      newReference.set(msgData).then(() => {
+        let chatListupdate = {
+          lastMsg: msg,
+          sendTime: msgData.sendTime,
+        };
+        database()
+          .ref('/chatlist/' + receiverData?.id + '/' + userData?.id)
+          .update(chatListupdate)
+          .then(() => console.log('Data updated.'));
+        console.log(
+          "'/chatlist/' + userData?.id + '/' + data?.id",
+          receiverData,
+        );
+        database()
+          .ref('/chatlist/' + userData?.id + '/' + receiverData?.id)
+          .update(chatListupdate)
+          .then(() => console.log('Data updated.'));
 
-               <TouchableOpacity
-               disabled={disabled}
-            //    onPress={sendMsg}
-               >
-                <Icon
-                        style={{
-                            // marginHorizontal: 15,
-                            color: COLORS.white
-                        }}
-                        name="paper-plane-sharp"
-                        type="Ionicons"
-                    />
+        setMsg('');
+        setdisabled(false);
+      });
+    }
+    setVisible(false);
+  };
 
-               </TouchableOpacity>
+  const showDialog = () => {
+    setVisible(true);
+  };
 
-            </View>
+  const handleCancel = () => {
+    setVisible(false);
+  };
+
+  return (
+    <SafeAreaView style={{flex: 1}}>
+      <View style={styles.container}>
+        <ChatHeader data={receiverData} />
+        <ImageBackground
+          source={require('../../Assets/Background.jpg')}
+          style={{flex: 1}}>
+          <FlatList
+            style={{flex: 1}}
+            data={allChat}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(item, index) => index}
+            inverted
+            renderItem={({item}) => {
+              return (
+                <MsgComponent sender={item.from == userData.id} item={item} />
+              );
+            }}
+          />
+        </ImageBackground>
+
+        <View
+          style={{
+            backgroundColor: COLORS.theme,
+            elevation: 5,
+            height: 60,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: 7,
+            justifyContent: 'space-evenly',
+          }}>
+          <TextInput
+            style={{
+              backgroundColor: COLORS.white,
+              width: '80%',
+              height: 40,
+              borderRadius: 25,
+              borderWidth: 0.5,
+              borderColor: COLORS.white,
+              paddingHorizontal: 15,
+              fontSize: 20,
+              color: COLORS.black,
+            }}
+            placeholder="type a message"
+            placeholderTextColor={COLORS.black}
+            multiline={true}
+            value={msg}
+            onChangeText={val => setMsg(val)}
+          />
+          <TouchableOpacity disabled={disabled} onPress={showDialog}>
+            <Icon
+              style={{
+                color: COLORS.white,
+              }}
+              name="add-circle-outline"
+              type="Ionicons"
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity disabled={disabled} onPress={sendMsg}>
+            <Icon
+              style={{
+                color: COLORS.white,
+              }}
+              name="paper-plane-sharp"
+              type="Ionicons"
+            />
+          </TouchableOpacity>
         </View>
-    );
+      </View>
+      <Dialog.Container visible={visible}>
+        <Dialog.Title>Send Image</Dialog.Title>
+        <Dialog.Description>Insert image url</Dialog.Description>
+        <Dialog.Input
+          textInputRef={textInputRef}
+          onChangeText={text => {
+            setImageUrl(text);
+          }}
+        />
+        <Dialog.Button label="Cancel" onPress={handleCancel} />
+        <Dialog.Button label="Send" onPress={handleSend} />
+      </Dialog.Container>
+    </SafeAreaView>
+  );
 };
 
 // define your styles
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
+  container: {
+    flex: 1,
+  },
 });
 
 //make this component available to the app

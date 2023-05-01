@@ -1,5 +1,6 @@
 export const COLORS = {
-  theme: '#27AE60',
+  black: '#595959',
+  theme: '#0177c0',
   button: '#37b5ba',
   bottomTab: '#151822',
   sbutton: '#aab29d',
@@ -7,7 +8,6 @@ export const COLORS = {
   white: '#fff',
   lightgray: '#eee',
   cream: '#FEF5E7',
-  black: '#000',
   green: '#7DCEA0',
   lightGreen: '#dcf8c6',
   yellow: 'yellow',

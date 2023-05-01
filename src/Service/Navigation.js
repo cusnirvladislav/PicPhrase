@@ -1,8 +1,4 @@
-import {
-  StackActions,
-  DrawerActions,
-  CommonActions,
-} from '@react-navigation/native';
+import {StackActions, CommonActions} from '@react-navigation/native';
 
 let _navigator;
 
@@ -28,14 +24,6 @@ function replace(routeName, params) {
   );
 }
 
-function openDrawer() {
-  _navigator.dispatch(DrawerActions.openDrawer());
-}
-
-function closeDrawer() {
-  _navigator.dispatch(DrawerActions.closeDrawer());
-}
-
 function back() {
   _navigator.dispatch(CommonActions.goBack());
 }
@@ -43,8 +31,6 @@ function back() {
 export default {
   navigate,
   setTopLevelNavigator,
-  openDrawer,
-  closeDrawer,
   back,
   replace,
 };
