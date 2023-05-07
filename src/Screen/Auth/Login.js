@@ -26,6 +26,18 @@ function Login() {
   const [pass, setpass] = useState('');
 
   const loginUser = async () => {
+    if (email === '' && pass === '') {
+      return Alert.alert('The fields is required');
+    }
+
+    if (email === '') {
+      return Alert.alert('The email field is required');
+    }
+
+    if (pass === '') {
+      return Alert.alert('The passcode field is required');
+    }
+
     database()
       .ref('users/')
       .orderByChild('emailId')
@@ -33,10 +45,11 @@ function Login() {
       .once('value')
       .then(async snapshot => {
         if (snapshot.val() == null) {
+          Alert.alert('Invalid Email!');
           return false;
         }
         let userData = Object.values(snapshot.val())[0];
-        if (userData?.password != pass) {
+        if (userData?.password !== pass) {
           Alert.alert('Invalid Password!');
           return false;
         }

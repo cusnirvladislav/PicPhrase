@@ -12,6 +12,8 @@ import {
   FlatList,
   Alert,
   SafeAreaView,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import moment from 'moment';
 import MsgComponent from '../../Component/Chat/MsgComponent';
@@ -35,6 +37,7 @@ function isImageUrl(url) {
 
   return true;
 }
+
 const SingleChat = props => {
   const {userData} = useSelector(state => state.User);
   const textInputRef = useRef();
@@ -149,74 +152,78 @@ const SingleChat = props => {
 
   return (
     <SafeAreaView style={{flex: 1}}>
-      <View style={styles.container}>
-        <ChatHeader data={receiverData} />
-        <ImageBackground
-          source={require('../../Assets/Background.jpg')}
-          style={{flex: 1}}>
-          <FlatList
-            style={{flex: 1}}
-            data={allChat}
-            showsVerticalScrollIndicator={false}
-            keyExtractor={(item, index) => index}
-            inverted
-            renderItem={({item}) => {
-              return (
-                <MsgComponent sender={item.from == userData.id} item={item} />
-              );
-            }}
-          />
-        </ImageBackground>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+        style={{flex: 1}}>
+        <View style={styles.container}>
+          <ChatHeader data={receiverData} />
+          <ImageBackground
+            source={require('../../Assets/Background.jpg')}
+            style={{flex: 1}}>
+            <FlatList
+              style={{flex: 1}}
+              data={allChat}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item, index) => index}
+              inverted
+              renderItem={({item}) => {
+                return (
+                  <MsgComponent sender={item.from == userData.id} item={item} />
+                );
+              }}
+            />
+          </ImageBackground>
 
-        <View
-          style={{
-            backgroundColor: COLORS.theme,
-            elevation: 5,
-            height: 60,
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingVertical: 7,
-            justifyContent: 'space-evenly',
-          }}>
-          <TextInput
+          <View
             style={{
-              backgroundColor: COLORS.white,
-              width: '80%',
-              height: 40,
-              borderRadius: 25,
-              borderWidth: 0.5,
-              borderColor: COLORS.white,
-              paddingHorizontal: 15,
-              fontSize: 20,
-              color: COLORS.black,
-            }}
-            placeholder="type a message"
-            placeholderTextColor={COLORS.black}
-            multiline={true}
-            value={msg}
-            onChangeText={val => setMsg(val)}
-          />
-          <TouchableOpacity disabled={disabled} onPress={showDialog}>
-            <Icon
+              backgroundColor: COLORS.theme,
+              elevation: 5,
+              height: 60,
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingVertical: 7,
+              justifyContent: 'space-evenly',
+            }}>
+            <TextInput
               style={{
-                color: COLORS.white,
+                backgroundColor: COLORS.white,
+                width: '80%',
+                height: 40,
+                borderRadius: 25,
+                borderWidth: 0.5,
+                borderColor: COLORS.white,
+                paddingHorizontal: 15,
+                fontSize: 20,
+                color: COLORS.black,
               }}
-              name="add-circle-outline"
-              type="Ionicons"
+              placeholder="type a message"
+              placeholderTextColor={COLORS.black}
+              multiline={true}
+              value={msg}
+              onChangeText={val => setMsg(val)}
             />
-          </TouchableOpacity>
+            <TouchableOpacity disabled={disabled} onPress={showDialog}>
+              <Icon
+                style={{
+                  color: COLORS.white,
+                }}
+                name="add-circle-outline"
+                type="Ionicons"
+              />
+            </TouchableOpacity>
 
-          <TouchableOpacity disabled={disabled} onPress={sendMsg}>
-            <Icon
-              style={{
-                color: COLORS.white,
-              }}
-              name="paper-plane-sharp"
-              type="Ionicons"
-            />
-          </TouchableOpacity>
+            <TouchableOpacity disabled={disabled} onPress={sendMsg}>
+              <Icon
+                style={{
+                  color: COLORS.white,
+                }}
+                name="paper-plane-sharp"
+                type="Ionicons"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
       <Dialog.Container visible={visible}>
         <Dialog.Title>Send Image</Dialog.Title>
         <Dialog.Description>Insert image url</Dialog.Description>
