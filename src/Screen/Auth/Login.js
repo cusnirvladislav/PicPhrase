@@ -35,7 +35,7 @@ function Login() {
     }
 
     if (pass === '') {
-      return Alert.alert('The passcode field is required');
+      return Alert.alert('The password field is required');
     }
 
     database()
